@@ -1,0 +1,149 @@
+# 2751. Robot Collisions
+
+## Problem
+
+You are given:
+
+* `positions[i]` → position of the `i-th` robot
+* `healths[i]` → health of the `i-th` robot
+* `directions[i]` → movement direction (`'L'` or `'R'`)
+
+Whenever two robots meet:
+
+* The robot with smaller health is destroyed.
+* The surviving robot loses `1` health.
+* If both have the same health, both are destroyed.
+
+Return the healths of the surviving robots in the original order.
+
+---
+
+## Approach
+
+1. Store robot indices and sort them by position.
+2. Use a stack to keep track of robots moving right (`'R'`).
+3. When a left-moving robot (`'L'`) appears:
+
+   * It collides with the nearest right-moving robot from the stack.
+   * Continue collisions until either:
+
+     * the left robot dies
+     * the stack becomes empty
+4. Collect all robots that are still alive.
+
+---
+
+## Intuition
+
+Only a robot moving right can collide with a robot coming later moving left.
+
+So while scanning robots from left to right:
+
+* push `'R'` robots into stack
+* for every `'L'` robot, simulate collisions with stack top
+
+---
+
+## C++ Code
+
+```cpp
+class Solution {
+public:
+    vector<int> survivedRobotsHealths(vector<int>& pos, vector<int>& h, string d) {
+
+        int n = pos.size();
+
+        vector<int> order(n);
+        iota(order.begin(), order.end(), 0);
+
+        sort(order.begin(), order.end(),
+             [&](int a, int b) {
+                 return pos[a] < pos[b];
+             });
+
+        vector<bool> alive(n, true);
+        vector<int> st;
+
+        for (int idx : order) {
+
+            if (d[idx] == 'R') {
+                st.push_back(idx);
+            }
+            else {
+                while (!st.empty() && alive[idx]) {
+
+                    int top = st.back();
+
+                    if (h[top] < h[idx]) {
+                        alive[top] = false;
+                        st.pop_back();
+                        h[idx]--;
+                    }
+                    else if (h[top] > h[idx]) {
+                        alive[idx] = false;
+                        h[top]--;
+                    }
+                    else {
+                        alive[top] = false;
+                        alive[idx] = false;
+                        st.pop_back();
+                    }
+                }
+            }
+        }
+
+        vector<int> ans;
+
+        for (int i = 0; i < n; i++) {
+            if (alive[i]) ans.push_back(h[i]);
+        }
+
+        return ans;
+    }
+};
+```
+
+---
+
+## Example
+
+### Input
+
+```text
+positions = [3,5,2,6]
+healths   = [10,10,15,12]
+directions = "RLRL"
+```
+
+### Sorted Order
+
+```text
+(2,15,R)
+(3,10,R)
+(5,10,L)
+(6,12,L)
+```
+
+### Simulation
+
+* `(3,10,R)` collides with `(5,10,L)` → both destroyed
+* `(2,15,R)` collides with `(6,12,L)` → right robot survives with `14`
+
+### Output
+
+```text
+[14]
+```
+
+---
+
+## Complexity
+
+* Time Complexity: `O(n log n)`
+
+  * Sorting takes `O(n log n)`
+  * Stack processing takes `O(n)`
+
+* Space Complexity: `O(n)`
+
+  * Stack + auxiliary arrays
