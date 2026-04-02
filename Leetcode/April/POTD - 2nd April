@@ -1,0 +1,219 @@
+# Robot Maximum Coins With Two Neutralizations - README
+
+## Problem Statement
+
+A robot starts from the top-left cell `(0, 0)` of a grid and wants to reach the bottom-right cell `(m - 1, n - 1)`.
+
+The robot can move only:
+
+* Right
+* Down
+
+Each cell contains a value:
+
+* Positive value → robot gains coins
+* Negative value → a robber steals coins
+
+The robot has a special power to neutralize robbers in at most 2 cells.
+
+Return the maximum total profit the robot can obtain.
+
+---
+
+## Example
+
+```text
+Input:
+coins = [[0,1,-1],
+         [1,-2,3],
+         [2,-3,4]]
+
+Output:
+8
+```
+
+Explanation:
+
+One optimal path is:
+
+```text
+(0,0) -> (0,1) -> (1,1) -> (1,2) -> (2,2)
+```
+
+Collected value:
+
+```text
+0 + 1 + 0 + 3 + 4 = 8
+```
+
+The robber at `(1,1)` is neutralized.
+
+---
+
+## DP State
+
+We use memoization with 3 parameters:
+
+```text
+solve(i, j, k)
+```
+
+Where:
+
+* `i` = current row
+* `j` = current column
+* `k` = remaining robber neutralizations
+
+Meaning:
+
+```text
+solve(i, j, k)
+= maximum coins collectable from (i, j)
+  to destination with k neutralizations left
+```
+
+---
+
+## Transition
+
+We can move either:
+
+```text
+Down  -> (i + 1, j)
+Right -> (i, j + 1)
+```
+
+If current cell is positive:
+
+```text
+coins[i][j] + max(down, right)
+```
+
+If current cell is negative:
+
+Two choices:
+
+1. Do not neutralize
+2. Neutralize it (if `k > 0`)
+
+```text
+max(
+    coins[i][j] + max(down, right),
+    max(down with k-1, right with k-1)
+)
+```
+
+---
+
+## Base Cases
+
+Out of bounds:
+
+```text
+return -infinity
+```
+
+Destination cell:
+
+* Take its value normally
+* Or neutralize it if it is negative and we still have power left
+
+---
+
+## C++ Memoization Code
+
+```cpp
+class Solution {
+public:
+    int m, n;
+    vector<vector<int>> grid;
+    vector<vector<vector<int>>> dp;
+
+    int solve(int i, int j, int k) {
+        if (i >= m || j >= n)
+            return -1e9;
+
+        if (dp[i][j][k] != INT_MIN)
+            return dp[i][j][k];
+
+        if (i == m - 1 && j == n - 1) {
+            if (grid[i][j] >= 0)
+                return grid[i][j];
+
+            int take = grid[i][j];
+            int neutralize = (k > 0 ? 0 : -1e9);
+
+            return dp[i][j][k] = max(take, neutralize);
+        }
+
+        int bestNext = max(
+            solve(i + 1, j, k),
+            solve(i, j + 1, k)
+        );
+
+        int ans;
+
+        if (grid[i][j] >= 0) {
+            ans = grid[i][j] + bestNext;
+        } else {
+            ans = grid[i][j] + bestNext;
+
+            if (k > 0) {
+                int neutralized = max(
+                    solve(i + 1, j, k - 1),
+                    solve(i, j + 1, k - 1)
+                );
+
+                ans = max(ans, neutralized);
+            }
+        }
+
+        return dp[i][j][k] = ans;
+    }
+
+    int maximumAmount(vector<vector<int>>& coins) {
+        grid = coins;
+        m = grid.size();
+        n = grid[0].size();
+
+        dp.assign(
+            m,
+            vector<vector<int>>(n, vector<int>(3, INT_MIN))
+        );
+
+        return solve(0, 0, 2);
+    }
+};
+```
+
+---
+
+## Complexity
+
+```text
+Time Complexity: O(m * n * 3)
+Space Complexity: O(m * n * 3)
+```
+
+Since `k` can only be `0`, `1`, or `2`, this is effectively:
+
+```text
+Time Complexity: O(m * n)
+Space Complexity: O(m * n)
+```
+
+---
+
+## Why Memoization Works
+
+Many paths reach the same cell with the same number of remaining neutralizations.
+
+Without memoization, the same state would be recalculated many times.
+
+By storing:
+
+```text
+dp[i][j][k]
+```
+
+we ensure every state is computed only once.
