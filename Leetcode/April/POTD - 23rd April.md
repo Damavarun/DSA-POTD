@@ -1,4 +1,4 @@
-Sum of Distances (LeetCode 2615)
+## Sum of Distances (LeetCode 2615)
 🧠 Problem Statement
 
 For each index i, compute:
